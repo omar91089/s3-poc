@@ -7,7 +7,7 @@ import redis
 import requests
 import time
 
-CONSUMER_URL = 'http://127.0.0.1:6000/process-file/'
+PROCESSOR_URL = 'http://127.0.0.1:6000/process_file/'
 PRODUCE_WAIT_TIME = 60  # seconds
 PUBLISH_CHANNEL = 'file_metadata_queue'
 S3_BUCKET_NAME = 'tc-app-integration-testing'
@@ -24,14 +24,15 @@ class TransferStrategy:
 
     def rest_api_strategy(self):
         try:
-            r = requests.post(CONSUMER_URL, json=self._payload)
+            r = requests.post(PROCESSOR_URL, json=self._payload)
             r.raise_for_status()
             logger.info('Successfully submitted file processing request through consumer API')
-        except requests.exceptions.RequestException as e:
-            logger.error('Problem in reaching out to consumer API', e)
+        except requests.exceptions.RequestException as err:
+            logger.error('Problem in reaching out to consumer API', err)
 
     def message_queue_strategy(self):
-        redis_client.publish(PUBLISH_CHANNEL, self._payload)
+        num = redis_client.publish(PUBLISH_CHANNEL, self._payload)
+        logger.info('File metadata delivered to subscribers: %s', num)
 
     def send_for_processing(self, file_name):
         self._payload = {
@@ -40,10 +41,10 @@ class TransferStrategy:
             'key_name': S3_KEY_NAME
         }
         if self._state:
-            logger.info('Calling consumer API: {}', CONSUMER_URL)
+            logger.info('Calling consumer API: {}', PROCESSOR_URL)
             self.rest_api_strategy()
         else:
-            logger.info('Publishing the file metadata on the channel: {}', PUBLISH_CHANNEL)
+            logger.info('Publishing the file metadata on the channel: %s', PUBLISH_CHANNEL)
             self.message_queue_strategy()
         self._state = not self._state
 
@@ -66,7 +67,7 @@ def generate_file():
 
 
 def produce():
-    logger.info('Starting producer...')
+    logger.info('Starting generator...')
     transfer_strategy = TransferStrategy()
     while True:
         file_name = generate_file()
