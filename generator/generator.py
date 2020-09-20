@@ -10,12 +10,12 @@ import time
 from lib.redis import RedisSingleton
 from lib.s3 import upload_file_to_s3
 
-GENERATE_WAIT_TIME = 60  # seconds
-PROCESSOR_URL = 'http://127.0.0.1:5001/process_file/'
+GENERATE_WAIT_TIME = 10  # seconds
+PROCESSOR_URL = 'http://127.0.0.1:5001/process_file'
 PUBLISH_CHANNEL = 'file_metadata_queue'
 SUBSCRIBE_CHANNEL = 'file_status_queue'
 S3_BUCKET_NAME = 'tc-app-integration-testing'
-S3_KEY_NAME = 'omar_testing/'
+S3_KEY_NAME = 'omar-testing/'
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -74,10 +74,13 @@ def process_queue_message(queue):
     message = queue.get_message()
     logger.info('Received message from generator: %s', message)
 
-    json_data = json.loads(message)
-    file_name = json_data.get('file_name')
-    status = json_data.get('status')
-    logger.info('File: %s, was processed with status: %s', file_name, status)
+    try:
+        json_data = json.loads(message['data'])
+        file_name = json_data.get('file_name')
+        status = json_data.get('status')
+        logger.info('File: %s, was processed with status: %s', file_name, status)
+    except TypeError as err:
+        logger.info('Message could not be loaded as JSON')
 
 
 def main():
@@ -91,9 +94,11 @@ def main():
     while True:
         if is_generate:
             generate_and_transfer(transfer_strategy)
+            is_generate = False
             time.sleep(GENERATE_WAIT_TIME)
         else:
             process_queue_message(queue)
+            is_generate = True
 
 
 if __name__ == '__main__':

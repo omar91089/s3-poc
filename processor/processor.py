@@ -11,7 +11,7 @@ from lib.redis import RedisSingleton
 from lib.s3 import get_file_from_s3, upload_file_to_s3
 
 
-GENERATOR_URL = 'http://127.0.0.1:5000/submit_status/'
+GENERATOR_URL = 'http://127.0.0.1:5000/submit_status'
 PUBLISH_CHANNEL = 'file_status_queue'
 SUBSCRIBE_CHANNEL = 'file_metadata_queue'
 
@@ -68,15 +68,20 @@ def main():
     transfer_strategy = TransferStrategy()
     while True:
         message = queue.get_message()
+        if not message:
+            continue
+
         logger.info('Received message from generator: %s', message)
+        try:
+            json_data = json.loads(message['data'])
+            file_name = json_data.get('file_name')
+            bucket_name = json_data.get('bucket_name')
+            key_name = json_data.get('key_name')
 
-        json_data = json.loads(message)
-        file_name = json_data.get('file_name')
-        bucket_name = json_data.get('bucket_name')
-        key_name = json_data.get('key_name')
-
-        process_file(file_name, bucket_name, key_name)
-        transfer_strategy.send_processed_file(file_name, bucket_name, key_name)
+            process_file(file_name, bucket_name, key_name)
+            transfer_strategy.send_processed_file(file_name, bucket_name, key_name)
+        except TypeError as err:
+            logger.info('Message could not be loaded as JSON')
 
 
 if __name__ == '__main__':

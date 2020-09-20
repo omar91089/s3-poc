@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from .processor import process_file
 
 app = Flask(__name__)
@@ -9,8 +9,8 @@ def server_info():
     return 'Processor server is running!'
 
 
-@app.route('/process-file', methods=['POST'])
-def process_file():
+@app.route('/process_file', methods=['POST'])
+def process_file_server():
     req_data = request.get_json()
     file_name = req_data.get('file_name')
     bucket_name = req_data.get('bucket_name')
