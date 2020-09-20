@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def server_info():
-    return 'Consumer server is running!'
+    return 'Processor server is running!'
 
 
 @app.route('/process-file', methods=['POST'])

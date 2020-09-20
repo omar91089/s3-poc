@@ -10,7 +10,7 @@ from lib.redis import RedisSingleton
 from lib.s3 import upload_file_to_s3
 
 GENERATE_WAIT_TIME = 10  # seconds
-PROCESSOR_URL = 'http://127.0.0.1:6000/process_file/'
+PROCESSOR_URL = 'http://127.0.0.1:5001/process_file/'
 PUBLISH_CHANNEL = 'file_metadata_queue'
 SUBSCRIBE_CHANNEL = 'file_status_queue'
 S3_BUCKET_NAME = 'tc-app-integration-testing'
