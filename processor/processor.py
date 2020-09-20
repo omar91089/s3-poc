@@ -5,6 +5,7 @@
 import json
 import logging
 import requests
+import sys
 
 from lib.redis import RedisSingleton
 from lib.s3 import get_file_from_s3, upload_file_to_s3
@@ -14,7 +15,11 @@ GENERATOR_URL = 'http://127.0.0.1:5000/submit_status/'
 PUBLISH_CHANNEL = 'file_status_queue'
 SUBSCRIBE_CHANNEL = 'file_metadata_queue'
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+logger.addHandler(handler)
 
 
 class TransferStrategy:
@@ -31,7 +36,7 @@ class TransferStrategy:
             logger.error('Problem in reaching out to generator API', err)
 
     def message_queue_strategy(self):
-        num = RedisSingleton.get_instance().publish(PUBLISH_CHANNEL, self._payload)
+        num = RedisSingleton.get_instance().publish(PUBLISH_CHANNEL, json.dumps(self._payload))
         logger.info('File status delivered to subscribers: %s', num)
 
     def send_processed_file(self, file_name, bucket_name, key_name):

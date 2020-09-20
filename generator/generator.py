@@ -4,19 +4,24 @@
 import json
 import logging
 import requests
+import sys
 import time
 
 from lib.redis import RedisSingleton
 from lib.s3 import upload_file_to_s3
 
-GENERATE_WAIT_TIME = 10  # seconds
+GENERATE_WAIT_TIME = 60  # seconds
 PROCESSOR_URL = 'http://127.0.0.1:5001/process_file/'
 PUBLISH_CHANNEL = 'file_metadata_queue'
 SUBSCRIBE_CHANNEL = 'file_status_queue'
 S3_BUCKET_NAME = 'tc-app-integration-testing'
 S3_KEY_NAME = 'omar_testing/'
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler(sys.stdout)
+handler.setLevel(logging.INFO)
+logger.addHandler(handler)
 
 
 class TransferStrategy:
@@ -34,7 +39,7 @@ class TransferStrategy:
             logger.error('Problem in reaching out to processor API', err)
 
     def message_queue_strategy(self):
-        num = self._redis.publish(PUBLISH_CHANNEL, self._payload)
+        num = self._redis.publish(PUBLISH_CHANNEL, json.dumps(self._payload))
         logger.info('File metadata delivered to subscribers: %s', num)
 
     def send_for_processing(self, file_name):
@@ -53,14 +58,14 @@ class TransferStrategy:
 
 
 def generate_file():
-    file_name = r'C:\Users\omar9\Desktop\tika_drf_s3.png'
-    logger.info('Generated file: {}', file_name)
+    file_name = 'mountains.jpg'
+    logger.info('Generated file: %s', file_name)
     return file_name
 
 
 def generate_and_transfer(transfer_strategy):
     file_name = generate_file()
-    is_file_uploaded = upload_file_to_s3(file_name, S3_KEY_NAME, S3_KEY_NAME, logger)
+    is_file_uploaded = upload_file_to_s3(file_name, S3_BUCKET_NAME, S3_KEY_NAME, logger)
     if is_file_uploaded:
         transfer_strategy.send_for_processing(file_name)
 
