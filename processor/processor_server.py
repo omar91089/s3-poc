@@ -1,5 +1,5 @@
 from flask import Flask, request
-from .processor import process_file
+from .processor import process_and_transfer_file, TransferStrategy
 
 app = Flask(__name__)
 
@@ -16,5 +16,7 @@ def process_file_server():
     bucket_name = req_data.get('bucket_name')
     key_name = req_data.get('key_name')
 
-    process_file(file_name, bucket_name, key_name)
-    return 'Successfully submitted file for processing!'
+    process_and_transfer_file(TransferStrategy(), file_name, bucket_name, key_name)
+    log_str = '[PROCESSOR SERVER] Successfully submitted file for processing using /process_file API!'
+    print(log_str)
+    return log_str

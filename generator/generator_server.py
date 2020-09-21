@@ -12,4 +12,6 @@ def submit_status():
     req_data = request.get_json()
     status = req_data.get('status')
     file_name = req_data.get('file_name')
-    return 'File: {0}, was processed with status: {1}'.format(file_name, status)
+    log_str = '[GENERATOR SERVER] File: {0}, was processed with /submit_status API with status: {1}'.format(file_name, status)
+    print(log_str)
+    return log_str

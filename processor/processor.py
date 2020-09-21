@@ -15,10 +15,12 @@ GENERATOR_URL = 'http://127.0.0.1:5000/submit_status'
 PUBLISH_CHANNEL = 'file_status_queue'
 SUBSCRIBE_CHANNEL = 'file_metadata_queue'
 
-logger = logging.getLogger()
+logger = logging.getLogger('processor')
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
@@ -53,10 +55,12 @@ class TransferStrategy:
         self._state = not self._state
 
 
-def process_file(file_name, bucket_name, key_name):
+def process_and_transfer_file(transfer_strategy, file_name, bucket_name, key_name):
     get_file_from_s3(file_name, bucket_name, key_name, logger)
     # processing logic here
+    logger.info('Processing complete!')
     upload_file_to_s3(file_name, bucket_name, key_name, logger)
+    transfer_strategy.send_processed_file(file_name, bucket_name, key_name)
 
 
 def main():
@@ -78,8 +82,7 @@ def main():
             bucket_name = json_data.get('bucket_name')
             key_name = json_data.get('key_name')
 
-            process_file(file_name, bucket_name, key_name)
-            transfer_strategy.send_processed_file(file_name, bucket_name, key_name)
+            process_and_transfer_file(transfer_strategy, file_name, bucket_name, key_name)
         except TypeError as err:
             logger.info('Message could not be loaded as JSON')
 

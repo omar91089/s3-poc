@@ -1,5 +1,5 @@
 # generate files and upload to S3
-# alternate between using consumer API and message queue to give file metadata
+# alternate between using processor API and message queue to give file metadata
 
 import json
 import logging
@@ -17,10 +17,12 @@ SUBSCRIBE_CHANNEL = 'file_status_queue'
 S3_BUCKET_NAME = 'tc-app-integration-testing'
 S3_KEY_NAME = 'omar-testing/'
 
-logger = logging.getLogger()
+logger = logging.getLogger('generator')
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 
@@ -72,7 +74,7 @@ def generate_and_transfer(transfer_strategy):
 
 def process_queue_message(queue):
     message = queue.get_message()
-    logger.info('Received message from generator: %s', message)
+    logger.info('Received message from processor: %s', message)
 
     try:
         json_data = json.loads(message['data'])
